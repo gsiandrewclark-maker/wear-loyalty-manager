@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wear Loyalty — Business Manager</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f4f4;color:#161616}
+header{background:#111;color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+h1,h2,h3{margin-top:0}header h1{font-size:20px;margin:0}header small{color:#aaa}
+.wrap{max-width:1250px;margin:auto;padding:20px}
+nav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+button{border:0;border-radius:8px;padding:9px 12px;cursor:pointer;background:#111;color:white}
+button.secondary{background:#e7e7e7;color:#111}button.danger{background:#b42318}button.edit{background:#555}
+section{display:none}.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:white;border:1px solid #ddd;border-radius:13px;padding:16px}.label{font-size:12px;color:#777}.value{font-size:24px;font-weight:800;margin-top:5px}
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:white;border:1px solid #ddd;border-radius:13px;padding:15px;margin-bottom:14px}
+.form .wide{grid-column:span 2}label{font-size:12px;color:#555;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;background:white}textarea{min-height:70px;resize:vertical}
+.tablewrap{overflow:auto;background:white;border:1px solid #ddd;border-radius:13px}table{width:100%;border-collapse:collapse;min-width:800px}th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px;vertical-align:middle}th{background:#fafafa}
+.actions{display:flex;gap:5px;flex-wrap:wrap}.note{font-size:12px;color:#666}.positive{color:#087443}.negative{color:#b42318}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:30;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modalbox{background:white;border-radius:15px;max-width:700px;width:100%;max-height:90vh;overflow:auto;padding:20px}
+img.thumb{width:58px;height:58px;object-fit:cover;border-radius:7px;border:1px solid #ddd}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:1fr 1fr}.form .wide{grid-column:span 2}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.form{grid-template-columns:1fr}.form .wide{grid-column:span 1}}
+</style>
+</head>
+<body>
+<header>
+ <div><h1>WEAR LOYALTY</h1><small>Business Manager — Fully Editable</small></div>
+ <div class="actions"><button class="secondary" onclick="exportData()">Export Backup</button><button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup</button><input id="importFile" type="file" accept=".json" hidden onchange="importData(event)"></div>
+</header>
+
+<div class="wrap">
+<nav>
+<button onclick="show('dashboard')">Dashboard</button>
+<button onclick="show('products')">Products</button>
+<button onclick="show('expenses')">Expenses</button>
+<button onclick="show('ads')">Ads</button>
+<button onclick="show('sales')">Sales</button>
+<button onclick="show('inventory')">Inventory</button>
+<button onclick="show('settings')">Settings</button>
+</nav>
+
+<section id="dashboard" class="active">
+<h2>Dashboard</h2>
+<div class="grid">
+<div class="card"><div class="label">Starting Budget</div><div class="value" id="dBudget"></div></div>
+<div class="card"><div class="label">Money Spent / Committed</div><div class="value" id="dSpent"></div></div>
+<div class="card"><div class="label">Budget Remaining</div><div class="value" id="dRemaining"></div></div>
+<div class="card"><div class="label">Sales Revenue</div><div class="value" id="dRevenue"></div></div>
+<div class="card"><div class="label">Inventory Units</div><div class="value" id="dUnits"></div></div>
+<div class="card"><div class="label">Units Sold</div><div class="value" id="dSold"></div></div>
+<div class="card"><div class="label">Ad Spend</div><div class="value" id="dAds"></div></div>
+<div class="card"><div class="label">Estimated Contribution</div><div class="value" id="dContribution"></div></div>
+</div>
+<div class="card" style="margin-top:14px">
+<b>Everything below is editable.</b>
+<div class="note" style="margin-top:7px">Products, quantities, prices, expenses, ads, sales, images, budget and settings can all be added, edited or deleted. Dashboard numbers update automatically.</div>
+</div>
+</section>
+
+<section id="products">
+<div class="bar"><h2>Products</h2><div class="note">Har article/color ka separate record aur design image rakh sakte ho.</div></div>
+<form class="form" onsubmit="productSave(event)">
+<input id="prodId" type="hidden">
+<div><label>Product Name</label><input id="prodName" required placeholder="Hoodie"></div>
+<div><label>SKU</label><input id="prodSku" placeholder="WL-H01"></div>
+<div><label>Color</label><input id="prodColor" required placeholder="Jet Black"></div>
+<div><label>Quantity</label><input id="prodQty" type="number" min="0" required></div>
+<div><label>Production / pc</label><input id="prodCost" type="number" min="0" required></div>
+<div><label>Sample Cost</label><input id="prodSample" type="number" min="0" value="0"></div>
+<div class="wide"><label>Size Breakdown / Notes</label><input id="prodNotes" placeholder="S2 M9 L12 XL7"></div>
+<div class="wide"><label>Design PNG/JPG/WEBP</label><input id="prodImage" type="file" accept="image/png,image/jpeg,image/webp"></div>
+<div class="actions"><button id="prodBtn">Add Product</button><button type="button" class="secondary" onclick="clearProduct()">Clear</button></div>
+</form>
+<div class="tablewrap"><table><thead><tr><th>Design</th><th>Product</th><th>SKU</th><th>Color</th><th>Qty</th><th>Cost</th><th>Value</th><th>Sample</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="productRows"></tbody></table></div>
+</section>
+
+<section id="expenses">
+<h2>Expenses</h2>
+<form class="form" onsubmit="expenseSave(event)">
+<input id="expId" type="hidden">
+<div><label>Date</label><input id="expDate" type="date" required></div>
+<div><label>Category</label><input id="expCat" list="cats" required placeholder="Packaging"></div>
+<div class="wide"><label>Description</label><input id="expDesc" required></div>
+<div><label>Amount</label><input id="expAmount" type="number" min="0" required></div>
+<div class="actions"><button id="expBtn">Add Expense</button><button type="button" class="secondary" onclick="clearExpense()">Clear</button></div>
+</form>
+<datalist id="cats"><option>Packaging</option><option>Labels/Tags</option><option>Website</option><option>Content/Photography</option><option>Influencers/UGC</option><option>Courier/Returns</option><option>Payment/COD</option><option>Miscellaneous</option></datalist>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="expenseRows"></tbody></table></div>
+</section>
+
+<section id="ads">
+<h2>Ads Tracker</h2>
+<form class="form" onsubmit="adSave(event)">
+<input id="adId" type="hidden">
+<div><label>Date</label><input id="adDate" type="date" required></div>
+<div><label>Platform</label><input id="adPlatform" list="platforms" required placeholder="Meta"></div>
+<div class="wide"><label>Campaign / Ad</label><input id="adName" required></div>
+<div><label>Spend</label><input id="adSpend" type="number" min="0" required></div>
+<div><label>Orders</label><input id="adOrders" type="number" min="0" value="0"></div>
+<div><label>Revenue</label><input id="adRevenue" type="number" min="0" value="0"></div>
+<div class="actions"><button id="adBtn">Add Ad</button><button type="button" class="secondary" onclick="clearAd()">Clear</button></div>
+</form>
+<datalist id="platforms"><option>Meta</option><option>Instagram</option><option>Facebook</option><option>TikTok</option><option>Google</option></datalist>
+<div class="grid" style="margin-bottom:14px">
+<div class="card"><div class="label">Ad Spend</div><div class="value" id="aTotal"></div></div>
+<div class="card"><div class="label">Ad Orders</div><div class="value" id="aOrders"></div></div>
+<div class="card"><div class="label">CPO</div><div class="value" id="aCpo"></div></div>
+<div class="card"><div class="label">ROAS</div><div class="value" id="aRoas"></div></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Platform</th><th>Campaign</th><th>Spend</th><th>Orders</th><th>Revenue</th><th>CPO</th><th>ROAS</th><th>Actions</th></tr></thead><tbody id="adRows"></tbody></table></div>
+</section>
+
+<section id="sales">
+<h2>Sales</h2>
+<form class="form" onsubmit="saleSave(event)">
+<input id="saleId" type="hidden">
+<div><label>Date</label><input id="saleDate" type="date" required></div>
+<div class="wide"><label>Product / SKU</label><input id="saleProduct" required placeholder="Jet Black Hoodie"></div>
+<div><label>Qty Sold</label><input id="saleQty" type="number" min="1" required></div>
+<div><label>Revenue</label><input id="saleRevenue" type="number" min="0" required></div>
+<div><label>Source</label><input id="saleSource" placeholder="Website / Instagram / WhatsApp"></div>
+<div class="actions"><button id="saleBtn">Add Sale</button><button type="button" class="secondary" onclick="clearSale()">Clear</button></div>
+</form>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Revenue</th><th>Source</th><th>Actions</th></tr></thead><tbody id="saleRows"></tbody></table></div>
+</section>
+
+<section id="inventory">
+<h2>Inventory</h2>
+<div class="note" style="margin-bottom:12px">
+Yahan inventory <b>directly edit</b> kar sakte ho. Planned Qty, Sold Qty aur Stock Adjustment change karne ke baad Save karo.
+</div>
+
+<form class="form" onsubmit="inventoryAdd(event)">
+<div><label>Product / Article</label><select id="invProduct" required><option value="">Select product</option><option value="Hoodie">Hoodie</option><option value="Trouser">Trouser</option><option value="Suede Jacket">Suede Jacket</option><option value="Leather Jacket">Leather Jacket</option></select></div>
+<div><label>Color</label><input id="invColor" placeholder="e.g. Jet Black, Jet Maroon" required></div>
+<div><label>Planned Qty</label><input id="invPlanned" type="number" min="0" required></div>
+<div><label>Sold Qty</label><input id="invSold" type="number" min="0" required></div>
+<div><label>Stock Adjustment (+/-)</label><input id="invAdjustment" type="number" value="0"></div>
+<div class="wide"><label>Inventory Note</label><input id="invNote" placeholder="e.g. 2 damaged, 5 received later"></div>
+<div class="actions"><button>Add / Set Inventory</button><button type="button" class="secondary" onclick="clearInventoryForm()">Clear</button></div>
+</form>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Product</th><th>Color</th><th>Planned Qty</th><th>Sold Qty</th><th>Adjustment</th><th>Current Stock</th><th>Inventory Value</th><th>Note</th><th>Actions</th></tr></thead>
+<tbody id="inventoryRows"></tbody>
+</table></div>
+</section>
+
+<section id="settings">
+<h2>Settings</h2>
+<form class="form" onsubmit="settingsSave(event)">
+<div><label>Starting Budget</label><input id="settingBudget" type="number" min="0" required></div>
+<div><label>Currency Label</label><input id="settingCurrency" placeholder="Rs."></div>
+<div><label>Brand Name</label><input id="settingBrand" placeholder="Wear Loyalty"></div>
+<div class="actions"><button>Save Settings</button></div>
+</form>
+<div class="card">
+<h3>Cloud Sync ☁️</h3>
+<p class="note">Mobile aur PC par same data sync karne ke liye Supabase Project URL + Publishable Key yahan save karo. Secret key yahan kabhi mat paste karna.</p>
+<div class="form" style="padding:0;border:0;margin:10px 0 0;background:transparent">
+  <div class="wide"><label>Supabase Project URL</label><input id="cloudUrl" placeholder="https://xxxxx.supabase.co"></div>
+  <div class="wide"><label>Supabase Publishable Key</label><input id="cloudKey" placeholder="sb_publishable_..."></div>
+  <div><label>Email</label><input id="cloudEmail" type="email" placeholder="you@example.com"></div>
+  <div><label>Password</label><input id="cloudPassword" type="password" placeholder="Your password"></div>
+  <div class="actions" style="grid-column:span 2"><button type="button" onclick="saveCloudConfig()">Save Connection</button><button type="button" class="secondary" onclick="cloudSignUp()">Create Account</button><button type="button" onclick="cloudLogin()">Login</button><button type="button" class="secondary" onclick="cloudLogout()">Logout</button></div>
+</div>
+<div id="cloudStatus" class="note" style="margin-top:10px">Cloud: Not connected</div>
+</div>
+<div class="card">
+<h3>Data Controls</h3>
+<div class="actions">
+<button class="secondary" onclick="exportData()">Export Full Backup</button>
+<button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup</button>
+<button class="danger" onclick="resetAll()">Reset All Data</button>
+</div>
+<p class="note">Reset All Data sab records permanently browser se hata dega. Backup pehle export kar lena.</p>
+</div>
+</section>
+</div>
+
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div class="modalbox" id="modalBox"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const KEY="wearLoyaltyManagerEditableV2";
+const CLOUD_KEY="wearLoyaltyCloudConfigV1";
+let sb=null;
+let cloudUser=null;
+let remoteSyncBusy=false;
+let cloudChannel=null;
+const today=new Date().toISOString().slice(0,10);
+let db=JSON.parse(localStorage.getItem(KEY)||"null")||{
+ settings:{budget:500000,currency:"Rs.",brand:"Wear Loyalty"},
+ products:[],
+ expenses:[],ads:[],sales:[],inventory:{}
+};
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+if(!db.inventory) db.inventory={};
+function syncInventoryToProducts(){}
+let cloudSaveTimer=null;
+function save(){
+  syncInventoryToProducts();
+  localStorage.setItem(KEY,JSON.stringify(db));
+  render();
+  if(!remoteSyncBusy && cloudUser && sb){
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer=setTimeout(()=>cloudUpload().catch(e=>setCloudStatus("Cloud save error: "+(e.message||e))),350);
+  }
+}
+function money(n){return (db.settings.currency||"Rs.")+" "+Math.round(n||0).toLocaleString("en-PK")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function show(id){document.querySelectorAll("section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active")}
+function get(id){return document.getElementById(id)}
+function fileToData(file){return new Promise((resolve,reject)=>{if(!file)return resolve("");if(file.size>4*1024*1024)return reject("Image 4MB se choti rakho.");const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+
+async function productSave(e){
+ e.preventDefault();let id=get("prodId").value;let old=db.products.find(x=>x.id===id);let image=old?.image||"";
+ try{if(get("prodImage").files[0])image=await fileToData(get("prodImage").files[0])}catch(x){alert(x);return}
+ let item={id:id||uid(),name:get("prodName").value,sku:get("prodSku").value,color:get("prodColor").value,qty:+get("prodQty").value,cost:+get("prodCost").value,sample:+get("prodSample").value,notes:get("prodNotes").value,image};
+ if(id){let i=db.products.findIndex(x=>x.id===id);db.products[i]=item}else db.products.push(item);
+ clearProduct();save();
+}
+function editProduct(id){let x=db.products.find(p=>p.id===id);get("prodId").value=x.id;get("prodName").value=x.name;get("prodSku").value=x.sku;get("prodColor").value=x.color;get("prodQty").value=x.qty;get("prodCost").value=x.cost;get("prodSample").value=x.sample;get("prodNotes").value=x.notes;get("prodBtn").textContent="Update Product";show("products");scrollTo(0,0)}
+function clearProduct(){["prodId","prodName","prodSku","prodColor","prodQty","prodCost","prodNotes"].forEach(x=>get(x).value="");get("prodSample").value=0;get("prodImage").value="";get("prodBtn").textContent="Add Product"}
+function deleteRecord(type,id){if(confirm("Delete this record?")){db[type]=db[type].filter(x=>x.id!==id);if(type==="products"&&db.inventory)delete db.inventory[id];save()}}
+function viewImage(id){let x=db.products.find(p=>p.id===id);if(!x?.image){alert("Design image nahi hai.");return}get("modalBox").innerHTML=`<h3>${esc(x.name)} — ${esc(x.color)}</h3><img src="${x.image}" style="max-width:100%;max-height:70vh;display:block;margin:auto;object-fit:contain"><div style="margin-top:12px"><button class="secondary" onclick="closeModal()">Close</button></div>`;get("modal").classList.add("show")}
+function closeModal(){get("modal").classList.remove("show")}
+
+function expenseSave(e){e.preventDefault();let id=get("expId").value,item={id:id||uid(),date:get("expDate").value,cat:get("expCat").value,desc:get("expDesc").value,amount:+get("expAmount").value};if(id)db.expenses[db.expenses.findIndex(x=>x.id===id)]=item;else db.expenses.push(item);clearExpense();save()}
+function editExpense(id){let x=db.expenses.find(p=>p.id===id);get("expId").value=x.id;get("expDate").value=x.date;get("expCat").value=x.cat;get("expDesc").value=x.desc;get("expAmount").value=x.amount;get("expBtn").textContent="Update Expense";show("expenses");scrollTo(0,0)}
+function clearExpense(){get("expId").value="";get("expDate").value=today;get("expCat").value="";get("expDesc").value="";get("expAmount").value="";get("expBtn").textContent="Add Expense"}
+
+function adSave(e){e.preventDefault();let id=get("adId").value,item={id:id||uid(),date:get("adDate").value,platform:get("adPlatform").value,name:get("adName").value,spend:+get("adSpend").value,orders:+get("adOrders").value,revenue:+get("adRevenue").value};if(id)db.ads[db.ads.findIndex(x=>x.id===id)]=item;else db.ads.push(item);clearAd();save()}
+function editAd(id){let x=db.ads.find(p=>p.id===id);get("adId").value=x.id;get("adDate").value=x.date;get("adPlatform").value=x.platform;get("adName").value=x.name;get("adSpend").value=x.spend;get("adOrders").value=x.orders;get("adRevenue").value=x.revenue;get("adBtn").textContent="Update Ad";show("ads");scrollTo(0,0)}
+function clearAd(){get("adId").value="";get("adDate").value=today;get("adPlatform").value="";get("adName").value="";get("adSpend").value="";get("adOrders").value=0;get("adRevenue").value=0;get("adBtn").textContent="Add Ad"}
+
+function saleSave(e){e.preventDefault();let id=get("saleId").value,item={id:id||uid(),date:get("saleDate").value,product:get("saleProduct").value,qty:+get("saleQty").value,revenue:+get("saleRevenue").value,source:get("saleSource").value};if(id)db.sales[db.sales.findIndex(x=>x.id===id)]=item;else db.sales.push(item);clearSale();save()}
+function editSale(id){let x=db.sales.find(p=>p.id===id);get("saleId").value=x.id;get("saleDate").value=x.date;get("saleProduct").value=x.product;get("saleQty").value=x.qty;get("saleRevenue").value=x.revenue;get("saleSource").value=x.source;get("saleBtn").textContent="Update Sale";show("sales");scrollTo(0,0)}
+function clearSale(){get("saleId").value="";get("saleDate").value=today;get("saleProduct").value="";get("saleQty").value="";get("saleRevenue").value="";get("saleSource").value="";get("saleBtn").textContent="Add Sale"}
+
+function inventoryAdd(e){
+ e.preventDefault();
+ const product=get("invProduct").value;
+ const color=get("invColor").value.trim();
+ if(!product||!color)return;
+ const editingId=get("invProduct").dataset.editingId;
+ const id=editingId||uid();
+ db.inventory[id]={
+   product, color,
+   planned:Math.max(0,+get("invPlanned").value),
+   sold:Math.max(0,+get("invSold").value),
+   adjustment:+get("invAdjustment").value||0,
+   note:get("invNote").value,
+   productId:""
+ };
+ const match=db.products.find(p=>p.name.toLowerCase()===product.toLowerCase() && p.color.toLowerCase()===color.toLowerCase());
+ if(match) db.inventory[id].productId=match.id;
+ clearInventoryForm();
+ save();
+}
+function editInventory(id){
+ const x=db.inventory[id]||{};
+ get("invProduct").value=x.product||"";
+ get("invProduct").dataset.editingId=id;
+ get("invColor").value=x.color||"";
+ get("invPlanned").value=x.planned||0;
+ get("invSold").value=x.sold||0;
+ get("invAdjustment").value=x.adjustment||0;
+ get("invNote").value=x.note||"";
+ show("inventory"); scrollTo(0,0);
+}
+function deleteInventory(id){
+ if(confirm("Is inventory record ko delete karna hai?")){ delete db.inventory[id]; save(); }
+}
+function clearInventoryForm(){
+ get("invProduct").value="";
+ delete get("invProduct").dataset.editingId;
+ get("invColor").value="";
+ get("invPlanned").value="";
+ get("invSold").value=0;
+ get("invAdjustment").value=0;
+ get("invNote").value="";
+}
+function renderInventoryForm(){}
+function inventorySoldFor(id){
+ const p=db.products.find(x=>x.id===id);
+ if(!p)return 0;
+ const x=db.inventory[id];
+ if(x && typeof x.sold==="number") return x.sold;
+ return db.sales.filter(s=>s.product.toLowerCase().includes(p.name.toLowerCase()) && s.product.toLowerCase().includes(p.color.toLowerCase())).reduce((a,s)=>a+s.qty,0);
+}
+function settingsSave(e){e.preventDefault();db.settings.budget=+get("settingBudget").value;db.settings.currency=get("settingCurrency").value||"Rs.";db.settings.brand=get("settingBrand").value||"Wear Loyalty";save();alert("Settings saved.")}
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="wear-loyalty-full-backup.json";a.click()}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.settings||!x.products)throw 0;db=x;save();alert("Backup imported.");}catch{alert("Invalid backup file.")}};r.readAsText(f)}
+function resetAll(){if(confirm("WARNING: sab data delete ho jayega. Continue?")){localStorage.removeItem(KEY);location.reload()}}
+
+
+function cloudConfig(){
+  try{return JSON.parse(localStorage.getItem(CLOUD_KEY)||"null")}catch{return null}
+}
+function setCloudStatus(msg){
+  const el=get("cloudStatus");
+  if(el) el.textContent=msg;
+}
+function fillCloudConfig(){
+  const c=cloudConfig()||{};
+  if(get("cloudUrl")) get("cloudUrl").value=c.url||"";
+  if(get("cloudKey")) get("cloudKey").value=c.key||"";
+}
+function saveCloudConfig(){
+  const url=get("cloudUrl").value.trim().replace(/\/+$/,"");
+  const key=get("cloudKey").value.trim();
+  if(!url || !key){alert("Supabase Project URL aur Publishable Key dono required hain.");return}
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){alert("Project URL check karo. Example: https://xxxxx.supabase.co");return}
+  localStorage.setItem(CLOUD_KEY,JSON.stringify({url,key}));
+  initSupabase();
+  setCloudStatus("Connection saved. Ab Create Account ya Login karo.");
+}
+function initSupabase(){
+  const c=cloudConfig();
+  if(!c?.url || !c?.key || !window.supabase) return;
+  try{
+    if(sb) sb.removeAllChannels?.();
+    sb=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    sb.auth.getSession().then(({data})=>{
+      cloudUser=data.session?.user||null;
+      updateCloudUI();
+      if(cloudUser) cloudLoadOrSeed();
+    }).catch(e=>setCloudStatus("Auth error: "+(e.message||e)));
+    sb.auth.onAuthStateChange((_event,session)=>{
+      cloudUser=session?.user||null;
+      updateCloudUI();
+      if(cloudUser) cloudLoadOrSeed();
+      else if(cloudChannel){sb.removeChannel(cloudChannel);cloudChannel=null}
+    });
+  }catch(e){setCloudStatus("Supabase connection error: "+(e.message||e))}
+}
+function updateCloudUI(){
+  if(!get("cloudStatus")) return;
+  if(!sb){setCloudStatus("Cloud: Connection not configured")}
+  else if(cloudUser){setCloudStatus("Cloud: Logged in as "+(cloudUser.email||"user")+" — Auto Sync ON")}
+  else setCloudStatus("Cloud: Connected — Login required");
+}
+async function cloudSignUp(){
+  if(!sb) initSupabase();
+  if(!sb){alert("Pehle Project URL aur Publishable Key save karo.");return}
+  const email=get("cloudEmail").value.trim(), password=get("cloudPassword").value;
+  if(!email || password.length<6){alert("Valid email aur kam az kam 6-character password enter karo.");return}
+  setCloudStatus("Account create ho raha hai...");
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){setCloudStatus("Sign up error: "+error.message);alert(error.message);return}
+  if(data.session){cloudUser=data.user;await cloudLoadOrSeed()}
+  else setCloudStatus("Account created. Email verification complete karo, phir Login karo.");
+}
+async function cloudLogin(){
+  if(!sb) initSupabase();
+  if(!sb){alert("Pehle Project URL aur Publishable Key save karo.");return}
+  const email=get("cloudEmail").value.trim(), password=get("cloudPassword").value;
+  if(!email || !password){alert("Email aur password enter karo.");return}
+  setCloudStatus("Login ho raha hai...");
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){setCloudStatus("Login error: "+error.message);alert(error.message);return}
+  cloudUser=data.user;
+  await cloudLoadOrSeed();
+}
+async function cloudLogout(){
+  if(!sb)return;
+  await sb.auth.signOut();
+  cloudUser=null;
+  if(cloudChannel){sb.removeChannel(cloudChannel);cloudChannel=null}
+  setCloudStatus("Cloud: Logged out");
+}
+async function cloudUpload(){
+  if(!sb || !cloudUser || remoteSyncBusy)return;
+  const payload={...db};
+  const {error}=await sb.from("wear_loyalty_data").upsert({user_id:cloudUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  if(error) throw error;
+  setCloudStatus("Cloud: Synced ✓");
+}
+async function cloudLoadOrSeed(){
+  if(!sb || !cloudUser)return;
+  setCloudStatus("Cloud: Loading...");
+  const {data,error}=await sb.from("wear_loyalty_data").select("data,updated_at").eq("user_id",cloudUser.id).maybeSingle();
+  if(error){setCloudStatus("Cloud load error: "+error.message);return}
+  if(data?.data){
+    remoteSyncBusy=true;
+    try{
+      db=data.data;
+      if(!db.settings)db.settings={budget:500000,currency:"Rs.",brand:"Wear Loyalty"};
+      if(!db.products)db.products=[];
+      if(!db.expenses)db.expenses=[];
+      if(!db.ads)db.ads=[];
+      if(!db.sales)db.sales=[];
+      if(!db.inventory)db.inventory={};
+      localStorage.setItem(KEY,JSON.stringify(db));
+      render();
+    }finally{remoteSyncBusy=false}
+    setCloudStatus("Cloud: Synced ✓");
+  }else{
+    await cloudUpload();
+  }
+  subscribeRealtime();
+}
+function subscribeRealtime(){
+  if(!sb || !cloudUser)return;
+  if(cloudChannel)sb.removeChannel(cloudChannel);
+  cloudChannel=sb.channel("wear-loyalty-sync-"+cloudUser.id)
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"wear_loyalty_data",filter:"user_id=eq."+cloudUser.id},payload=>{
+      if(!payload.new?.data)return;
+      remoteSyncBusy=true;
+      try{
+        db=payload.new.data;
+        localStorage.setItem(KEY,JSON.stringify(db));
+        render();
+        setCloudStatus("Cloud: Updated from another device ✓");
+      }finally{remoteSyncBusy=false}
+    })
+    .subscribe();
+}
+function render(){
+ let production=db.products.reduce((a,p)=>a+p.qty*p.cost,0),samples=db.products.reduce((a,p)=>a+p.sample,0),ads=db.ads.reduce((a,p)=>a+p.spend,0),expenses=db.expenses.reduce((a,p)=>a+p.amount,0),revenue=db.sales.reduce((a,p)=>a+p.revenue,0),units=db.products.reduce((a,p)=>a+(db.inventory[p.id]?.planned||p.qty),0),sold=db.products.reduce((a,p)=>a+(db.inventory[p.id]?.sold||0),0),spent=production+samples+ads+expenses,remaining=db.settings.budget-spent,contribution=revenue-(ads+db.sales.reduce((a,s)=>{let p=db.products.find(p=>s.product.toLowerCase().includes(p.name.toLowerCase()));return a+(p?p.cost*s.qty:0)},0));
+ get("dBudget").textContent=money(db.settings.budget);get("dSpent").textContent=money(spent);get("dRemaining").textContent=money(remaining);get("dRemaining").className="value "+(remaining<0?"negative":"positive");get("dRevenue").textContent=money(revenue);get("dUnits").textContent=units;get("dSold").textContent=sold;get("dAds").textContent=money(ads);get("dContribution").textContent=money(contribution);
+ get("productRows").innerHTML=db.products.map(x=>`<tr><td>${x.image?`<img class="thumb" src="${x.image}"><br><button class="secondary" onclick="viewImage('${x.id}')">View</button>`:"—"}</td><td>${esc(x.name)}</td><td>${esc(x.sku)}</td><td>${esc(x.color)}</td><td>${x.qty}</td><td>${money(x.cost)}</td><td>${money(x.qty*x.cost)}</td><td>${money(x.sample)}</td><td>${esc(x.notes)}</td><td class="actions"><button class="edit" onclick="editProduct('${x.id}')">Edit</button><button class="danger" onclick="deleteRecord('products','${x.id}')">Delete</button></td></tr>`).join("");
+ get("expenseRows").innerHTML=db.expenses.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.cat)}</td><td>${esc(x.desc)}</td><td>${money(x.amount)}</td><td class="actions"><button class="edit" onclick="editExpense('${x.id}')">Edit</button><button class="danger" onclick="deleteRecord('expenses','${x.id}')">Delete</button></td></tr>`).join("");
+ let ao=db.ads.reduce((a,x)=>a+x.orders,0),ar=db.ads.reduce((a,x)=>a+x.revenue,0);
+ get("aTotal").textContent=money(ads);get("aOrders").textContent=ao;get("aCpo").textContent=ao?money(ads/ao):"—";get("aRoas").textContent=ads?(ar/ads).toFixed(2)+"x":"—";
+ get("adRows").innerHTML=db.ads.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.platform)}</td><td>${esc(x.name)}</td><td>${money(x.spend)}</td><td>${x.orders}</td><td>${money(x.revenue)}</td><td>${x.orders?money(x.spend/x.orders):"—"}</td><td>${x.spend?(x.revenue/x.spend).toFixed(2)+"x":"—"}</td><td class="actions"><button class="edit" onclick="editAd('${x.id}')">Edit</button><button class="danger" onclick="deleteRecord('ads','${x.id}')">Delete</button></td></tr>`).join("");
+ get("saleRows").innerHTML=db.sales.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.product)}</td><td>${x.qty}</td><td>${money(x.revenue)}</td><td>${esc(x.source)}</td><td class="actions"><button class="edit" onclick="editSale('${x.id}')">Edit</button><button class="danger" onclick="deleteRecord('sales','${x.id}')">Delete</button></td></tr>`).join("");
+ renderInventoryForm();
+get("inventoryRows").innerHTML=Object.keys(db.inventory).map(id=>{
+ let x=db.inventory[id];
+ let p=db.products.find(q=>q.id===x.productId);
+ let cost=p?+p.cost:0;
+ let current=Math.max(0,(+x.planned||0)-(+x.sold||0)+(+x.adjustment||0));
+ return `<tr>
+ <td>${esc(x.product||"")}</td><td>${esc(x.color||"")}</td>
+ <td>${x.planned}</td><td>${x.sold}</td><td>${x.adjustment||0}</td>
+ <td><b>${current}</b></td><td>${cost?money(current*cost):"—"}</td><td>${esc(x.note||"")}</td>
+ <td class="actions"><button class="edit" onclick="editInventory('${id}')">Edit</button><button class="danger" onclick="deleteInventory('${id}')">Delete</button></td>
+ </tr>`
+}).join("");
+ get("settingBudget").value=db.settings.budget;get("settingCurrency").value=db.settings.currency;get("settingBrand").value=db.settings.brand;
+}
+get("expDate").value=today;get("adDate").value=today;get("saleDate").value=today;renderInventoryForm();clearInventoryForm();fillCloudConfig();render();initSupabase();
+</script>
+</body>
+</html>
